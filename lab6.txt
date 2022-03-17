@@ -1,0 +1,236 @@
+ 
+Lab 06
+ 
+ 
+Laboratory Exercise
+ 
+LAB EXERCISE
+ 
+What You Learn 
+•	Rcap preparing puppet-agent image and creating a puppet agent container
+
+
+Part 1
+Time to Complete 
+Approximately 45 Minutes
+
+From your machine logged-in to RP VPN, run Remote Desktop Connection to connect to the ubuntu Linux Virtual Machine (VM). Please login based on your assigned VM as shown below:
+S/N	VM	IP Address	User Name	Password
+0	PDC2-Ubuntu-01	172.20.113.182	dockeradm	docker!2
+1	PDC2-Ubuntu-02	172.20.113.183	dockeradm	docker!2
+2	PDC2-Ubuntu-03	172.20.113.184	dockeradm	docker!2
+3	PDC2-Ubuntu-04	172.20.113.185	dockeradm	docker!2
+4	PDC2-Ubuntu-05	172.20.113.186	dockeradm	docker!2
+5	PDC2-Ubuntu-06	172.20.113.187	dockeradm	docker!2
+6	PDC2-Ubuntu-07	172.20.113.188	dockeradm	docker!2
+7	PDC2-Ubuntu-08	172.20.113.189	dockeradm	docker!2
+8	PDC2-Ubuntu-09	172.20.113.190	dockeradm	docker!2
+9	PDC2-Ubuntu-10	172.20.113.191	dockeradm	docker!2
+10	PDC2-Ubuntu-11	172.20.113.192	dockeradm	docker!2
+11	PDC2-Ubuntu-12	172.20.113.193	dockeradm	docker!2
+12	PDC2-Ubuntu-13	172.20.113.194	dockeradm	docker!2
+13	PDC2-Ubuntu-14	172.20.113.195	dockeradm	docker!2
+14	PDC2-Ubuntu-15	172.20.113.196	dockeradm	docker!2
+15	PDC2-Ubuntu-16	172.20.113.197	dockeradm	docker!2
+16	PDC2-Ubuntu-17	172.20.113.198	dockeradm	docker!2
+17	PDC2-Ubuntu-18	172.20.113.199	dockeradm	docker!2
+18	PDC2-Ubuntu-19	172.20.113.200	dockeradm	docker!2
+19	PDC2-Ubuntu-20	172.20.113.201	dockeradm	docker!2
+20	PDC2-Ubuntu-21	172.20.113.202	dockeradm	docker!2
+
+
+
+ 
+
+Replace xx with the IP address of the VM that you have been assigned.
+
+In this lab you will create a new container with puppet agent installed and having an assigned static IP address. The followings are the overview of the tasks to be performed:
+
+●	Create a container
+●	Install puppet agent and commonly used packages
+●	Create image
+●	Create new container from image
+●	Create docker custom network
+●	Assign static IP to client container
+
+
+ 
+
+You should have already set up Puppet Enterprise (PE) on you VM. If not yet, please refer to lesson 1 and complete the PE setup.
+
+1.	On your VM, open Terminal and enter the following command to login as a superuser.
+
+root@sddo-vm:  su
+*password: ubuntu
+
+To add an entry or modify the hosts file, simply run the commands below to open the hosts file.
+
+root@sddo-vm:  nano /etc/hosts
+
+Make the change to the hosts file as per below (yellow highlight).
+
+ 
+
+Save the file and exit. 
+
+
+
+
+2. Prepare a puppet-agent container image
+
+2.1 Create a new container 
+
+root@sddo-vm:  docker run -it puppetclient1 ubuntu:18.04 /bin/bash
+
+
+ 
+2.2 On new container, Install useful packages
+
+Fill in the purpose of the following each package:
+
+Package Name
+	Purpose
+curl
+	
+wget
+	
+vim
+	
+iputils-ping
+	
+net-tools
+	
+openssh-server
+	
+
+
+root@puppetclient:  apt-get update
+
+root@puppetclient:  apt-get install curl wget vim iputils-ping net-tools openssh-server
+
+
+2.3 On the new container, install puppet-agent
+
+root@puppetclient1:  wget --content-disposition 'https://pm.puppetlabs.com/puppet-agent/2021.5.0/7.14.0/repos/deb/bionic/puppet7/puppet-agent_7.14.0-1bionic_amd64.deb'
+
+root@puppetclient:  dpkg -i puppet-agent_7.14.0-1bionic_amd64.deb
+
+
+2.4 Save container as image to local docker repository
+
+root@sddo-vm:  docker commit puppetclient1 puppetclient1
+
+ 
+2.5 Create a docker custom network
+root@sddo-vm:  docker network create –subnet=192.168.100.0/24 customnetwork
+
+View your custom network information
+root@sddo-vm:  docker network inspect customnetwork
+
+ 
+
+
+ 
+3. Create new container (with puppet-agent installed)
+
+root@sddo-vm:  docker run -d --privileged -h “puppetclient.localdomain” - -name puppetclient1  - -add-host “sddo-vm.localdomain:172.20.113.92”  - -ip “192.168.100.3” puppetclient /sbin/init
+
+(Note: Yellow hightlignted IP address is your Puppet Master)
+For the various option used in docker run command, refer to https://docs.docker.com/engine/reference/commandline/run/
+
+
+3.1 Verify the yellow highlight texts are already in the /etc/hosts file of the container.
+(sddo-vm.localdomain’s IP address should be your VM’s IP address)
+
+root@puppetclient:  cat /etc/hosts
+
+ 
+
+3.2 Configure puppet client setting
+root@puppetclient:  vim /etc/puppetlabs/puppet/puppet.conf
+
+Add the following texts (yellow highlight) into the file
+ 
+
+
+ 
+
+4. Register the puppet agent with the puppet master.
+
+4.1 On the client node (Puppet Agent), sends its first request.
+root@puppetclient1:  /opt/puppetlabs/bin/puppet agent -t
+
+ 
+
+
+4.2 On the server node (Puppet Master), list all the available certificates. Notice that the cert from the client node (puppetclient) is now shown.
+
+On the server node (Puppet Master), list all the certificates. 
+root@sddo-vm: /opt/puppetlabs/bin/puppetserver ca list --all
+
+ 
+
+Sign the requested certificates.
+root@sddo-vm:  /opt/puppetlabs/bin/puppetserver ca sign –all
+
+ 
+
+ 
+5. On the client node (puppetclient1), use the following command to test the communication between the server and client node.
+
+root@puppetclient1:  /opt/puppetlabs/bin/puppet agent –t
+
+ 
+
+
+6. Extend your path variable to include the puppet command
+
+In the container, edit ~/.bashrc file to make permanent modifications. Use a text editor like nano to open the file
+
+root@puppetclient1:  nano ~/.bashrc
+
+append the file with the following
+export PATH=$PATH:/opt/puppetlabs/bin
+
+Force changes in current terminal session
+root@puppetclient1: .  ~/.bashrc
+
+root@puppetclient1:  echo $PATH
+ 
+
+Test puppet command can be issued from any folder.
+root@puppetclient1:  puppet agent -t
+(There should be error in the output)
+ 
+
+
+
+You have successful setup a container with puppet-agent running, assigned static IP address. We will use this container in subsequent lessons.
+
+
+
+Part 2
+
+Time to Complete 
+Approximately 15 Minutes
+
+Now, you should be able to create another puppet agent container. Based on the following information, create another puppet agent container.
+
+Container Information	Setting	Remark
+Container Name	puppetclient2	
+Docker image	puppetclient-image	Image was created earlier in this lab
+Container IP Address	192.168.0.4	
+Custom Network	customnetwork	192.168.100.0/24
+Container Hostname	puppetclient2.localdomain	
+Puppet Master	sddo-vm.localdomain	
+Privileged Container	Yes	
+
+
+
+
+
+
+
+
+--End of Lab Exercise --
+

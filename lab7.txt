@@ -1,0 +1,257 @@
+ 
+Lab 07
+ 
+ 
+Laboratory Exercise
+ 
+LAB EXERCISE
+ 
+Time to Complete 
+Approximately 60 Minutes 
+
+What You Need 
+●	You need to complete lab 6 exercises so that 2 new Puppet Clients are setup for use in this lab exercise. If you have yet to create the 2 containers, please create them immediately so that you can perform lab 07.
+
+From your machine logged-in to RP VPN, run Remote Desktop Connection to connect to the ubuntu Linux Virtual Machine (VM). Please login based on your assigned VM as shown below:
+
+S/N	Name 	VM	IP Address	User Name	Password
+1	LEOW TANG QING	PDC2-Ubuntu-03	172.20.113.184	dockeradm	docker!2
+2	LIM SHEN HUI	PDC2-Ubuntu-02	172.20.113.183	dockeradm	docker!2
+3	LIN JINGZHOU	PDC2-Ubuntu-04	172.20.113.185	dockeradm	docker!2
+4	MUHAMMAD FAISAL BIN SHAIK HASSAN	PDC2-Ubuntu-05	172.20.113.186	dockeradm	docker!2
+5	LYNN LEE QING XIA	PDC2-Ubuntu-06	172.20.113.187	dockeradm	docker!2
+6	NG CHEE KIONG	PDC2-Ubuntu-07	172.20.113.188	dockeradm	docker!2
+7	PARAMASIVAM S/O VANNU GOPAL	PDC2-Ubuntu-08	172.20.113.189	dockeradm	docker!2
+8	SAHLATUL-FARIHAH BINTE M ASARI	PDC2-Ubuntu-09	172.20.113.190	dockeradm	docker!2
+9	SHAIKH FAID BIN OMAR	PDC2-Ubuntu-10	172.20.113.191	dockeradm	docker!2
+10	CHIU JING XIONG	PDC2-Ubuntu-11	172.20.113.192	dockeradm	docker!2
+11	KELLY WONG XUE YEE	PDC2-Ubuntu-12	172.20.113.193	dockeradm	docker!2
+12	LIM SI YING	PDC2-Ubuntu-01	172.20.113.182	dockeradm	docker!2
+13	LIN LI YI	PDC2-Ubuntu-14	172.20.113.195	dockeradm	docker!2
+14	MUHAMMAD MUQTADIR BIN SADIQ BASHA	PDC2-Ubuntu-15	172.20.113.196	dockeradm	docker!2
+15	NUR HIDAYAH BTE RAMLEE	PDC2-Ubuntu-16	172.20.113.197	dockeradm	docker!2
+16	NUR NADIA ASHBOLLAH BINTE	PDC2-Ubuntu-17	172.20.113.198	dockeradm	docker!2
+17	NUR THAQIFAH AQILAH BINTE JURAIMI	PDC2-Ubuntu-18	172.20.113.199	dockeradm	docker!2
+18	RAUDHATUNNISHA BTE RAMLI	PDC2-Ubuntu-19	172.20.113.200	dockeradm	docker!2
+19	SITI NUR ALYSHYIA BINTE HASHIM	PDC2-Ubuntu-20	172.20.113.201	dockeradm	docker!2
+20	TAN TEE BING	PDC2-Ubuntu-21	172.20.113.202	dockeradm	docker!2
+
+
+
+
+ 
+
+Replace xx with the IP address of the VM that you have been assigned.
+
+Part 1: Installed puppet bolt on your VM.
+1. In part 1 lab, you will need to
+●	Install puppet bolt package on your VM
+
+1.1	Installed puppet bolt on your VM. 
+
+Open Terminal and enter the following command to login as a superuser.
+
+dockeradm@sddo-vm:  su - root
+*password: ubuntu
+
+root@sddo-vm : 
+
+Download the bolt package appropriate to your operating system and architecture.
+
+root@sddo-vm: wget https://apt.puppet.com/puppet-tools-release-bionic.deb
+
+root@sddo-vm: dpkg -i puppet-tools-release-bionic.deb
+
+root@sddo-vm:  apt-get update 
+
+root@sddo-vm:  apt-get install puppet-bolt
+
+
+1.2 Check that 2 containers previously created during lesson 6 are running.
+
+You should see at least 2 clients being specified in sddo-vm /etc/hosts file
+root@sddo-vm:  cat /etc/hosts
+ 
+
+root@sddo-vm:  docker ps
+ 
+
+ 
+2	Now, we are ready to work on the containers
+
+2.1	Access first container puppetclient1, install package sudo and add new user
+root@sddo-vm:  docker exec -it puppetclient1 /bin/bash
+
+root@puppetclient1: apt-get update
+ 
+
+root@puppetclient1: apt-get install sudo
+ 
+
+
+2.2	Add a new user and set its password 
+ 
+root@puppetclient1: useradd clientadm  -m  -d /home/clientadm
+
+root@puppetclient1: passwd clientadm
+
+ 
+(set the password as user123)
+
+
+ 
+2.3	Add the user to sudo group, issue the following commands and observe the output.
+
+root@puppetclient1:  cat /etc/group |grep sudo
+ 
+
+root@puppetclient1:  usermod -G sudo clientusr
+
+root@puppetclient1:  cat /etc/group |grep sudo
+
+ 
+
+2.4	Repeat the same steps (2.1, 2.2 & 2.3) for puppetclient2 container.
+
+
+
+ 
+3. Now, we are ready to use puppet bolt command
+
+3.1 Use bolt command run
+
+To view content of /etc/shadow of remote puppetclient1 
+
+root@sddo-vm: bolt command run ‘cat /etc/shadow’ -t puppetclient1 -u clientadm -p user123  - -no-host-key-check  - -run-as root 
+
+Paste the output
+
+
+
+
+
+
+
+
+
+ 
+
+
+To list directory /opt of both puppetclient1 and puppetclient2
+
+root@sddo-vm: bolt command run ‘ls /opt’ -t puppetclient1,puppetclient2 -u clientadm -p user123  - -no-host-key-check  
+
+Paste the output
+
+
+
+
+
+
+
+
+
+
+3.2 Use bolt script run
+
+root@sddo-vm: cd /root
+root@sddo-vm: nano testscript.sh
+ 
+
+
+root@sddo-vm: bolt script run ‘/root/testscript.sh -t puppetclient1,puppetclient2  -u clientadm -p user123  - -no-host-key-check  
+
+Paste the output
+
+
+
+
+
+ 
+
+root@puppetclient1: ls /tmp/myfile
+
+ 
+
+
+root@puppetclient2: ls /tmp/myfile
+ 
+ 
+3.3 let us build the following directories and files structure:
+
+ 
+
+root@sddo-vm: cd /root/.puppetlabs/bolt/modules
+
+root@sddo-vm: mkdir module_a
+
+root@sddo-vm: cd module_a
+
+root@sddo-vm: mkdir plans  files   tasks
+
+3.4 Create task files
+
+root@sddo-vm: cd ../tasks
+
+root@sddo-vm: nano create_taskfile
+ 
+
+
+root@sddo-vm: nano copy_taskfile
+ 
+
+
+3.5 Now, let us run the bolt task from sddo-vm on clientpuppet1
+
+root@sddo-vm: bolt task run module_a::create_taskfile -t puppetclient1.localdomain -u clientadm -p user123  - -no-host-key-check  - -run-as root
+
+ 
+
+
+root@sddo-vm: bolt task run module_a::copy_taskfile -t puppetclient1.localdomain -u clientadm -p user123  - -no-host-key-check  - -run-as root
+
+ 
+
+
+
+ 
+3.6 Create plan file
+
+root@sddo-vm: cd /root/.puppetlabs/bolt/modules/plans
+
+root@sddo-vm: nano plan_a.yaml
+  
+
+root@sddo-vm: cd ../files
+
+root@sddo-vm: nano create_testfile
+ 
+
+root@sddo-vm: nano copy_testfile
+ 
+
+
+3.7 Now, let us run the bolt plan from sddo-vm on clientpuppet1
+
+root@sddo-vm: bolt plan run module_a::plan_a -t puppetclient1.localdomain -u clientadm -p user123  - -no-host-key-check  - -run-as root
+ 
+
+ 
+Check on puppetclient1:
+
+root@sddo-vm: docker exec -it puppetclient1 /bin/bash
+root@puppetclient1: cd /root/testdir
+
+root@puppetclient1: ls 
+ 
+
+root@puppetclient1: cat testfile
+ 
+
+root@puppetclient1: cat testfile.bak
+ 
+
+
+
+--End of Lab Exercise --
+
